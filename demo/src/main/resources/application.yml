@@ -1,0 +1,127 @@
+spring:
+  application:
+    name: ticket-booking
+  mail:
+    host: ${SPRING_EMAIL_HOST}
+    port: ${SPRING_EMAIL_PORT}
+    username: ${SPRING_EMAIL_USERNAME}
+    password: ${SPRING_EMAIL_PASSWORD}
+
+    properties:
+        mail:
+            smtp:
+                auth: true
+                starttls:
+                  enable: true
+  spring:
+
+    rabbitmq:
+      host: ${SPRING_RABBITMQ_HOST}
+      port: ${SPRING_RABBITMQ_PORT}
+      username: ${SPRING_RABBITMQ_USERNAME}
+      password: ${SPRING_RABBITMQ_PASSWORD}
+
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID}
+            client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+            scope:
+              - email
+              - profile
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            user-name-attribute: sub
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:127.0.0.1}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ""   # nếu có password thì thêm vào
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+# Application configuration
+app:
+  jwt:
+    # ⚠️ IMPORTANT: Move this to environment variable in production!
+    # Use: ${JWT_SECRET:default_value}
+    secret: ${JWT_SECRET}
+    
+    # Token expiration (can be overridden with environment variables)
+    access-token-expiration: ${ACCESS_TOKEN_EXPIRATION}     # 15 minutes in ms
+    refresh-token-expiration: ${REFRESH_TOKEN_EXPIRATION} # 7 days in ms
+
+# Server configuration
+server:
+  port: ${SERVER_PORT:5000}
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: on_param # Set to 'never' in production
+
+# VN PAY
+payment:
+  vnpay:
+    payment-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+    return-url: http://localhost:5000/api/payment/vn-pay-callback
+    tmn-code: 1NNMEDJD
+    hash-secret: ${VN_PAY_HASH_SECRET}
+    version: 2.1.0
+    order-type: other
+    command: pay
+momo:
+  partnerCode: MOMO
+  accessKey: F8BBA842ECF85
+  secretKey: ${MOMO_SECRET_KEY}
+  endpoint: https://test-payment.momo.vn/v2/gateway/api/create
+  returnUrl: http://localhost:5173/payment/callback
+#  returnUrl: http://localhost:5000/api/momo/return
+  notifyUrl: https://bolometric-kenneth-commendably.ngrok-free.dev/api/momo/notify
+
+
+
+# Logging configuration
+logging:
+  level:
+    com.example.demo: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: INFO
+    org.springframework.amqp: DEBUG
+    org.springframework.amqp.rabbit: DEBUG
+    org.springframework.data.redis: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+
+
+
