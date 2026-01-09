@@ -28,4 +28,9 @@ public interface EventService {
     Page<EventResponse> getEventsWithPagination(int page, int size, String sortBy, String direction);
 
     Page<EventResponse> searchEventsWithPagination(EventSearchCriteria criteria);
+
+    ApiResponse<?> getEventsDashboardData();
+
+    ApiResponse<?> getNextEventsDashboardData();
+
 }

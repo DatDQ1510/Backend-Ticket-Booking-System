@@ -58,7 +58,7 @@ public class JwtTokenProvider {
         claims.put(SecurityConstants.CLAIM_DEVICE_ID, deviceId);
         claims.put(SecurityConstants.CLAIM_TOKEN_TYPE, tokenType.name());
 
-        return Jwts.builder()
+        return Jwts .builder()
                 .setId(UUID.randomUUID().toString())
                 .setClaims(claims)
                 .setSubject(email)

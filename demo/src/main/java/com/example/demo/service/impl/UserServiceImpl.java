@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.example.demo.mapper.UserMapper;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -36,8 +38,14 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Map các trường từ DTO vào entity
-        userMapper.updateInfo(updateUserDTO, userEntity);
+        userEntity.setAddress(updateUserDTO.getAddress());
+        userEntity.setPhoneNumber(updateUserDTO.getPhoneNumber());
+        userEntity.setFullName(updateUserDTO.getFullName());
+        userEntity.setEmail(updateUserDTO.getEmail());
+        userEntity.setDateOfBirth(updateUserDTO.getBirthOfDate());
+        userEntity.setUsername(updateUserDTO.getUsername());
 
+        log.info("User updated");
         // Lưu entity
         UserEntity updatedUser = userRepository.save(userEntity);
 
@@ -58,7 +66,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> updatePassword(String oldPassword, String newPassword) {
         Long userId = UserContext.requireCurrentUserId();
         log.info("Updating password for userId: {}", userId);
@@ -73,6 +80,43 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         return ApiResponse.success("Password updated successfully", null);
+    }
+
+    @Override
+    public ApiResponse<String> createPassword(String newPassword) {
+        Long userId = UserContext.requireCurrentUserId();
+        log.info("Updating password for userId: {}", userId);
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        return ApiResponse.success("Password updated successfully", null);
+    }
+
+    @Override
+    public ApiResponse<?> getUserDashboardData() {
+
+        LocalDate today = LocalDate.now();
+
+        // Tháng này
+        LocalDateTime startThisMonth = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endThisMonth = today.atTime(23, 59, 59);
+
+        // Tháng trước (cùng kỳ)
+        LocalDateTime startLastMonth = today.minusMonths(1).withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endLastMonth = today.minusMonths(1).atTime(23, 59, 59);
+
+
+        return ApiResponse.success("Get full data user Dashboard", userRepository.getUserStatsMTD(
+                startThisMonth,
+                endThisMonth,
+                startLastMonth,
+                endLastMonth
+        ));
+
     }
 
     @Override
@@ -103,5 +147,11 @@ public class UserServiceImpl implements UserService {
         List<UserEntity> users = userRepository.findAll(spec_User);
         List<UsersDTO> result = userMapper.toUsersDto(users);
         return ApiResponse.success("User search completed successfully", result);
+    }
+
+    @Override
+    public ApiResponse<Boolean> checkPassword() {
+        boolean check = userRepository.existsByHasPassword(false);
+        return ApiResponse.success("Password check completed successfully", check);
     }
 }

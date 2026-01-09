@@ -46,9 +46,20 @@ public class UserController {
     }
 
     @PatchMapping("/update-password")
-    public ApiResponse<String> updateUserPassword( @RequestBody String oldPassword, @RequestBody String newPassword) {
-        Long userId = UserContext.requireCurrentUserId();
+    public ApiResponse<String> updateUserPassword( @RequestBody FormUpdatePassword form) {
+        String oldPassword = form.getOldPassword();
+        String newPassword = form.getNewPassword();
         return userService.updatePassword(oldPassword , newPassword);
+    }
+
+    @PatchMapping("/create-password")
+    public ApiResponse<String> createUserPassword( @RequestBody FormCreatePassword form) {
+        String newPassword = form.getNewPassword();
+        return userService.createPassword(newPassword);
+    }
+    @GetMapping("/check-password")
+    public ApiResponse<Boolean> checkUserPassword() {
+        return userService.checkPassword();
     }
 
     @GetMapping("/all-users")
@@ -61,5 +72,17 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<List<UsersDTO>> searchUsers(@RequestBody UserSearchCriteria criteria) {
         return userService.searchUser(criteria);
+    }
+
+    @GetMapping("/dashboard")
+    public ApiResponse<UserDashboardDTO> getUserDashboardData() {
+
+        UserDashboardDTO dashboardDTO = new UserDashboardDTO(
+                2547,
+                342,
+                298
+        );
+        return ApiResponse.success("Get full data user Dashboard", dashboardDTO);
+//        return userService.getUserDashboardData();
     }
 }

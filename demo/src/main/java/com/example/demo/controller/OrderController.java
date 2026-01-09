@@ -2,7 +2,9 @@ package com.example.demo.controller;
 
 import com.example.demo.context.UserContext;
 import com.example.demo.dto.order.CreateOrderDTO;
+import com.example.demo.dto.order.OrderDashboardDTO;
 import com.example.demo.dto.order.OrderResponse;
+import com.example.demo.dto.user.UserDashboardDTO;
 import com.example.demo.payload.ApiResponse;
 import com.example.demo.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -31,4 +33,15 @@ public class OrderController {
         return ApiResponse.success("Orders retrieved successfully", orders);
     }
 
+    @GetMapping("/dashboard")
+    public ApiResponse<OrderDashboardDTO> getUserDashboardData() {
+
+        OrderDashboardDTO dashboardDTO = new OrderDashboardDTO(
+                500000,
+                200000,
+                100000
+        );
+        return ApiResponse.success("Get full data user Dashboard", dashboardDTO);
+//        return orderService.getRevenueDashboardData();
+    }
 }

@@ -25,6 +25,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -259,6 +262,45 @@ public class EventServiceImpl implements EventService {
         return eventPage.map(eventMapper::toResponse);
     }
 
+    @Override
+    public ApiResponse<?> getEventsDashboardData() {
+        LocalDate today = LocalDate.now();
+        // Tháng này
+
+        LocalDateTime startThisMonth = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endThisMonth = today.atTime(23, 59, 59);
+
+        // Tháng trước (cùng kỳ)
+        LocalDateTime startLastMonth = today.minusMonths(1).withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endLastMonth = today.minusMonths(1).atTime(23, 59, 59);
+
+        return ApiResponse.success("Get full data event Dashboard",
+                eventRepository.getEventsStatsMTD(
+                        startThisMonth,
+                        endThisMonth,
+                        startLastMonth,
+                        endLastMonth));
+    }
+
+    @Override
+    public ApiResponse<?> getNextEventsDashboardData() {
+
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+
+        LocalDateTime startThisMonth = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endThisMonth = today.atTime(23, 59, 59);
+
+        LocalDateTime startLastMonth = today.minusMonths(1).withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endLastMonth = today.minusMonths(1).atTime(23, 59, 59);
+        return ApiResponse.success("Get next events data for Dashboard",
+                eventRepository.getNextEventsStatsMTD(
+                        startThisMonth,
+                        endThisMonth,
+                        startLastMonth,
+                        endLastMonth,
+                        today));
+    }
 
     private String cacheEventResponse(Long eventId) {
         // Implement caching logic ( using Redis )

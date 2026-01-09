@@ -1,9 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.event.CreateEventDTO;
-import com.example.demo.dto.event.EventResponse;
-import com.example.demo.dto.event.EventSearchCriteria;
-import com.example.demo.dto.event.EventUpdateDTO;
+import com.example.demo.dto.event.*;
 import com.example.demo.payload.ApiResponse;
 import com.example.demo.payload.PagedResponse;
 import com.example.demo.service.EventService;
@@ -176,6 +173,37 @@ public class EventController {
         return seatService.warmUpSeatStatusCacheForEvent(eventId);
     }
 
+
+    @GetMapping("/dashboard")
+    public ApiResponse<EventDashboardDto> getEventsDashboardData() {
+
+        EventDashboardDto data = new EventDashboardDto(
+                15,
+                5,
+                3
+        );
+
+        return ApiResponse.success(
+                "Get full data event Dashboard",
+                data
+        );
+//        return eventService.getEventsDashboardData();
+    }
+
+    @GetMapping("/dashboard/next")
+    public ApiResponse<UpcomingEventDashboardDto> getNextEventsDashboardData() {
+
+        UpcomingEventDashboardDto data = new UpcomingEventDashboardDto(
+                20,
+                8,
+                12
+        );
+        return ApiResponse.success(
+                "Get next events for Dashboard",
+                data
+        );
+//        return eventService.getNextEventsDashboardData();
+    }
 
 
 

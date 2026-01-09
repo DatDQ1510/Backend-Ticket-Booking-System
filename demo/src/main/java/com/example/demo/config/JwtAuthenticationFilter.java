@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
+                                      HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
@@ -70,6 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // 🔹 Token hợp lệ → xác thực người dùng
                     TokenMetadata metadata = tokenProvider.extractTokenMetadata(jwt);
+                    log.info("✅ Token valid for {} ", metadata);
                     log.info("🔍 Token metadata - Email: {}, TokenId: {}, Type: {}", 
                         metadata.getEmail(), metadata.getTokenId(), metadata.getTokenType());
                     
@@ -77,7 +78,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     boolean isBlacklisted = metadata.getTokenId() != null && blacklistService.isBlacklisted(metadata.getTokenId());
                     
                     if (!isBlacklisted) {
-                        setAuthentication(metadata.getEmail(), request);
+                        setAuthentication(metadata.getEmail(), request); // có khả năng gây ra vấn đề hiệu năng vì lần nào cũng phải gọi vào DB check
                         log.info("✅ Authenticated successfully for {} on {}", metadata.getEmail(), path);
                     } else {
                         log.warn("❌ Token is blacklisted - TokenId: {}, Email: {}", 

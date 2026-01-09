@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.dto.order.CreateOrderDTO;
 import com.example.demo.dto.order.OrderResponse;
 import com.example.demo.entity.OrderEntity;
+import com.example.demo.payload.ApiResponse;
 
 import java.util.List;
 
@@ -12,4 +13,7 @@ public interface OrderService {
     void updateOrderPaymentSuccess(Long orderId, String transId);
     void updateOrderPaymentFailed(Long orderId);
     List<OrderResponse> getOrdersByUserId(Long userId);
+
+    ApiResponse<?> getRevenueDashboardData();
+
 }

@@ -14,4 +14,8 @@ public interface UserService {
     ApiResponse<Profile> getUserProfile(Long userId);
     ApiResponse<List<UsersDTO>>getAllUsers();
     ApiResponse<List<UsersDTO>> searchUser(UserSearchCriteria criteria);
+    ApiResponse <Boolean> checkPassword();
+    ApiResponse<String> createPassword(String newPassword);
+
+    ApiResponse<?> getUserDashboardData();
 }

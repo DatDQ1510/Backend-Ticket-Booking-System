@@ -28,6 +28,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .email(email)
                     .username(name)
                     .role(Role.USER)
+                    .hasPassword(false)
+                    .provider("GOOGLE")
                     .build();
             return userRepository.save(newUser);
         });

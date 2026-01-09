@@ -37,7 +37,7 @@ public class UserEntity extends BaseEntity {
     private String email;
 
     @JsonIgnore
-    @Column(nullable = false, name = "password")
+    @Column(name = "password")
     private String password;
 
 
@@ -60,6 +60,12 @@ public class UserEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = true, columnDefinition = "varchar(20) default 'ACTIVE'", name = "status")
     private Status status;
+
+    @Column(nullable = false, columnDefinition = "boolean default true", name = "has_password")
+    private boolean hasPassword;
+
+    @Column(nullable = true, name = "provider")
+    private String provider;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EventEntity> events;

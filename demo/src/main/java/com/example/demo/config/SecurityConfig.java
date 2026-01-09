@@ -93,7 +93,7 @@ public class SecurityConfig {
         StrictHttpFirewall firewall = new StrictHttpFirewall();
         firewall.setAllowUrlEncodedSlash(true);
         firewall.setAllowSemicolon(true);
-        firewall.setAllowUrlEncodedDoubleSlash(true); // Cho phép “//”
+        firewall.setAllowUrlEncodedDoubleSlash(true);
         return firewall;
     }
 }

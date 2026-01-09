@@ -10,6 +10,7 @@ import com.example.demo.entity.UserEntity;
 import com.example.demo.entity.enums.OrderStatus;
 import com.example.demo.entity.enums.SeatStatus;
 import com.example.demo.entity.enums.TicketStatus;
+import com.example.demo.payload.ApiResponse;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.SeatRepository;
 import com.example.demo.repository.UserRepository;
@@ -18,6 +19,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -196,6 +199,27 @@ public class OrderServiceImpl implements OrderService {
         return orders.stream()
             .map(order -> mapToOrderResponse(order, null))
             .collect(Collectors.toList());
+    }
+
+    @Override
+    public ApiResponse<?> getRevenueDashboardData() {
+
+        LocalDate today = LocalDate.now();
+
+        // Tháng này
+        LocalDateTime startThisMonth = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endThisMonth = today.atTime(23, 59, 59);
+
+        // Tháng trước (cùng kỳ)
+        LocalDateTime startLastMonth = today.minusMonths(1).withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endLastMonth = today.minusMonths(1).atTime(23, 59, 59);
+
+        return ApiResponse.success("Get full data revenue Dashboard", orderRepository.getRevenueStatsMTD(
+                startThisMonth,
+                endThisMonth,
+                startLastMonth,
+                endLastMonth
+        ));
     }
 
 }
