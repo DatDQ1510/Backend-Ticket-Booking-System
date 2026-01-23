@@ -83,8 +83,8 @@ public class MailService {
             for (int i = 0; i < tickets.size(); i++) {
                 TicketEntity ticket = tickets.get(i);
                 
-                // Generate QR code using QRCodeService (includes USER_ID and TIMESTAMP for security)
-                String qrCodeBase64 = qrCodeService.generateTicketQRCode(ticket.getTicketId());
+                // Generate QR code using system method (no user authentication required for email)
+                String qrCodeBase64 = qrCodeService.generateTicketQRCodeForSystem(ticket.getTicketId());
                 byte[] qrCodeImage = Base64.getDecoder().decode(qrCodeBase64);
 
                 // Attach QR code to email

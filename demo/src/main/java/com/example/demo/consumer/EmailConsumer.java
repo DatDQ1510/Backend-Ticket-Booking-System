@@ -19,6 +19,7 @@ public class EmailConsumer {
     private final OrderRepository orderRepository;
 
     @RabbitListener(queues = RabbitMQConfig.EMAIL_QUEUE)
+    @Transactional(readOnly = true) // Cần transaction để tránh LazyInitializationException
     public void handleEmailNotification(PaymentNotificationDTO notification) {
         System.out.println(">>> [EMAIL CONSUMER] Nhận được payment notification để gửi email:");
         System.out.println("    OrderId: " + notification.getOrderId());
@@ -26,21 +27,29 @@ public class EmailConsumer {
         System.out.println("    Amount: " + notification.getAmount());
 
         try {
-            // Gửi email thành công
-            Long orderId = Long.parseLong(notification.getOrderId().toString());
+            Long orderId = notification.getOrderId();
             Double amount = Double.parseDouble(notification.getAmount().toString());
-            System.out.println("📧 Gửi email xác nhận thanh toán thành công cho order: " + orderId);
 
-            // ✅ Lấy email từ Order entity với fetch join (không dùng UserContext vì consumer không có SecurityContext)
-            OrderEntity order = orderRepository.findByIdWithUser(orderId)
+            // ✅ Lấy order với FULL details (user + tickets + event + seat) để tránh LazyInitializationException
+            OrderEntity order = orderRepository.findByIdWithFullDetails(orderId)
                     .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
             
             String email = order.getUser().getEmail();
             System.out.println("📧 Sending email to: " + email);
             
-            mailService.sendPaymentSuccessEmail(email, orderId, amount);
-
-            System.out.println("✅ Đã gửi email thành công cho order: " + notification.getOrderId());
+            // Kiểm tra resultCode để gửi email tương ứng
+            if (notification.getResultCode() == 0) {
+                // Thanh toán thành công - gửi email xác nhận
+                System.out.println("📧 Gửi email xác nhận thanh toán thành công cho order: " + orderId);
+                mailService.sendPaymentSuccessEmail(email, orderId, amount);
+                System.out.println("✅ Đã gửi email xác nhận thanh toán thành công cho order: " + orderId);
+            } else {
+                // Thanh toán thất bại - gửi email thông báo thất bại
+                System.out.println("📧 Gửi email thông báo thanh toán thất bại cho order: " + orderId);
+                // TODO: Implement sendPaymentFailedEmail if needed
+                // mailService.sendPaymentFailedEmail(email, orderId, amount);
+                System.out.println("⚠️ Email thanh toán thất bại chưa được implement");
+            }
 
         } catch (Exception e) {
             System.err.println("❌ Lỗi khi gửi email: " + e.getMessage());
