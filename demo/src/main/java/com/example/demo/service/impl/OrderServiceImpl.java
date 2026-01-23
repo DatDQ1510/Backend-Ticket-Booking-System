@@ -210,29 +210,45 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void updateOrderPaymentSuccess(Long orderId, String transId) {
+        System.out.println("\n========================================");
+        System.out.println("🔄 [UPDATE ORDER] Bắt đầu cập nhật order payment success");
+        System.out.println("   OrderId: " + orderId);
+        System.out.println("   TransId: " + transId);
+        System.out.println("========================================\n");
+        
         OrderEntity order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
 
+        System.out.println("📋 Order hiện tại - Status: " + order.getStatus() + ", Amount: " + order.getAmount());
+        
         // check idempotency
         if (order.getStatus() == OrderStatus.PAID) {
             System.out.println("⚠️ Order " + orderId + " is already PAID. Skipping update.");
             return;
         }
+        
+        System.out.println("🔄 Đang cập nhật order sang trạng thái PAID...");
+        
         // Cập nhật order
         order.setStatus(OrderStatus.PAID);
         order.setMomoTransId(transId);
         order.setPaidAt(java.time.LocalDateTime.now());
-        System.out.println("order" + order);
+        System.out.println("📝 Order sau khi update: " + order);
         
         // Cập nhật tickets sang SOLD và seats từ HOLD sang BOOKED
+        System.out.println("🎫 Cập nhật " + order.getTickets().size() + " tickets và seats...");
         for (TicketEntity ticket : order.getTickets()) {
+            System.out.println("   - Ticket #" + ticket.getTicketId() + ": " + ticket.getStatus() + " → SOLD");
+            System.out.println("   - Seat #" + ticket.getSeat().getSeatId() + ": " + ticket.getSeat().getStatus() + " → BOOKED");
             ticket.setStatus(TicketStatus.SOLD);
             SeatEntity seat = ticket.getSeat();
             seat.setStatus(SeatStatus.BOOKED);  // HOLD → BOOKED
         }
         
+        System.out.println("💾 Đang lưu order vào database...");
         orderRepository.save(order);
-        System.out.println("✅ Updated order " + orderId + " to PAID status");
+        System.out.println("✅✅✅ HOÀN TẤT: Order " + orderId + " đã được cập nhật thành công sang PAID status");
+        System.out.println("========================================\n");
     }
 
     @Override

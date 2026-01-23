@@ -23,6 +23,15 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
     @Query("SELECT o FROM OrderEntity o JOIN FETCH o.user WHERE o.orderId = :orderId")
     Optional<OrderEntity> findByIdWithUser(@Param("orderId") Long orderId);
     
+    // For EmailConsumer - fetch everything needed to avoid LazyInitializationException
+    @Query("SELECT DISTINCT o FROM OrderEntity o " +
+           "JOIN FETCH o.user u " +
+           "LEFT JOIN FETCH o.tickets t " +
+           "LEFT JOIN FETCH t.event e " +
+           "LEFT JOIN FETCH t.seat s " +
+           "WHERE o.orderId = :orderId")
+    Optional<OrderEntity> findByIdWithFullDetails(@Param("orderId") Long orderId);
+    
     @Query("SELECT DISTINCT o FROM OrderEntity o " +
            "LEFT JOIN FETCH o.tickets t " +
            "LEFT JOIN FETCH t.event " +

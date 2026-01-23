@@ -52,22 +52,22 @@
         @PostMapping("/notify")
         public ResponseEntity<String> handleNotify(@RequestBody Map<String, Object> body) {
             System.out.println("✅ Đinh Quốc Đat - 2050531200254");
-            System.out.println(">>> [4 callback từ server:");
+            System.out.println(">>> [NOTIFY] Callback từ MoMo server:");
             body.forEach((k, v) -> System.out.println(k + " = " + v));
-            Object resultCode = body.get("resultCode");
-            if ( Integer.parseInt(resultCode.toString()) != 0) {
-                return ResponseEntity.badRequest().body("Lỗi thanh toán");
-            }
-            boolean isValid = HmacSHA256Util.verifySignature(body, accessKey, secretKey);
-
-            if (!isValid) {
-                System.out.println("❌ Chữ ký không hợp lệ!");
-                return ResponseEntity.badRequest().body("Invalid signature");
-            }
-            else{
-                System.out.println("✅ Chữ ký hợp lệ!");
-            }
+            
             try {
+                Object resultCode = body.get("resultCode");
+                
+                // Verify signature trước
+                boolean isValid = HmacSHA256Util.verifySignature(body, accessKey, secretKey);
+                
+                if (!isValid) {
+                    System.out.println("❌ Chữ ký không hợp lệ!");
+                    return ResponseEntity.badRequest().body("Invalid signature");
+                } else {
+                    System.out.println("✅ Chữ ký hợp lệ!");
+                }
+                
                 // Lấy thông tin từ callback
                 Object orderId = body.get("orderId");
                 Object transId = body.get("transId");
@@ -81,9 +81,9 @@
                 String momoOrderId = orderId.toString();
                 Long originalOrderId = Long.parseLong(momoOrderId.split("_")[0]);
                 
-                // Tạo DTO để gửi vào RabbitMQ
+                // Tạo DTO để gửi vào RabbitMQ (cả thành công và thất bại)
                 PaymentNotificationDTO notification = new PaymentNotificationDTO();
-                notification.setOrderId(originalOrderId); // Dùng orderId gốc đã extract
+                notification.setOrderId(originalOrderId);
                 notification.setResultCode(Integer.parseInt(resultCode.toString()));
                 notification.setTransId(transId != null ? transId.toString() : null);
                 notification.setAmount(amount != null ? Long.parseLong(amount.toString()) : null);
@@ -93,23 +93,25 @@
                 notification.setSignature(signature != null ? signature.toString() : null);
                 notification.setExtraData(extraData != null ? extraData.toString() : null);
 
-                // Gửi message vào RabbitMQ để xử lý async
+                // Gửi message vào RabbitMQ để xử lý async (cả success và failed)
                 rabbitTemplate.convertAndSend(
                         RabbitMQConfig.PAYMENT_EXCHANGE,
                         "",  // Routing key rỗng vì dùng FanoutExchange
                         notification
                 );
 
-                System.out.println("✅ Đã gửi payment notification vào RabbitMQ queue cho orderId: " + originalOrderId);
+                if (notification.getResultCode() == 0) {
+                    System.out.println("✅ Thanh toán thành công. Đã gửi notification vào RabbitMQ cho orderId: " + originalOrderId);
+                } else {
+                    System.out.println("❌ Thanh toán thất bại (resultCode=" + notification.getResultCode() + "). Đã gửi notification vào RabbitMQ cho orderId: " + originalOrderId);
+                }
 
-            // Trả về OK ngay lập tức cho MoMo
-            return ResponseEntity.ok("OK");
+                // Trả về OK ngay lập tức cho MoMo (cả success và failed đều return OK)
+                return ResponseEntity.ok("OK");
 
             } catch (Exception e) {
-                System.err.println("❌ Lỗi khi gửi message vào RabbitMQ: " + e.getMessage());
-
+                System.err.println("❌ Lỗi khi xử lý notify từ MoMo: " + e.getMessage());
                 e.printStackTrace();
-
                 return ResponseEntity.internalServerError().body("Internal Error");
             }
         }
