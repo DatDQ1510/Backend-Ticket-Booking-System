@@ -33,19 +33,40 @@ public class QRCodeServiceImpl implements QRCodeService {
             throw new RuntimeException("Unauthorized: Ticket does not belong to current user");
         }
         
+        return generateQRCodeInternal(ticket, ticketUserId);
+    }
+    
+    /**
+     * Generate QR code without user authorization check
+     * For internal system use (e.g., EmailConsumer, Admin)
+     */
+    public String generateTicketQRCodeForSystem(Long ticketId) {
+        TicketEntity ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
+        
+        Long ticketUserId = ticket.getOrder().getUser().getUserId();
+        log.info("🎫 [SYSTEM] Generated QR code for ticket: {} (User: {})", ticketId, ticketUserId);
+        
+        return generateQRCodeInternal(ticket, ticketUserId);
+    }
+    
+    /**
+     * Internal method to generate QR code from ticket entity
+     */
+    private String generateQRCodeInternal(TicketEntity ticket, Long userId) {
         // Tạo QR data với timestamp để tránh giả mạo
         String qrData = String.format(
             "TICKET_ID:%d|ORDER_ID:%d|USER_ID:%d|EVENT_ID:%d|SEAT_ID:%d|EMAIL:%s|TIMESTAMP:%d",
             ticket.getTicketId(),
             ticket.getOrder().getOrderId(),
-            ticketUserId,
+            userId,
             ticket.getEvent().getEventId(),
             ticket.getSeat().getSeatId(),
             ticket.getOrder().getUser().getEmail(),
             System.currentTimeMillis()
         );
         
-        log.info("🎫 Generated QR code for ticket: {} (User: {})", ticketId, currentUserId);
+        log.info("🎫 Generated QR code for ticket: {} (User: {})", ticket.getTicketId(), userId);
         
         // Generate QR code và return base64 string
         byte[] qrCodeImage = QRCodeUtil.generateQRCodeImage(qrData, 300, 300);

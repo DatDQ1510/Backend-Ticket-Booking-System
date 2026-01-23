@@ -12,6 +12,14 @@ public interface QRCodeService {
     String generateTicketQRCode(Long ticketId);
     
     /**
+     * Generate QR code for a ticket without user authorization check
+     * For internal system use (e.g., EmailConsumer, Admin operations)
+     * @param ticketId Ticket ID
+     * @return Base64 encoded QR code image
+     */
+    String generateTicketQRCodeForSystem(Long ticketId);
+    
+    /**
      * Generate QR code with custom data
      * @param qrData QR code data
      * @param width Width of QR code
