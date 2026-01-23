@@ -31,9 +31,13 @@ public class UserActivityLogService {
      * Ghi log hoạt động của user từ request
      * - Async để không block request
      * - Chỉ log nếu activity mới cách xa activity cũ >= 5 phút
+     * - Sử dụng REQUIRES_NEW để tách transaction và noRollbackFor để tránh rollback
      */
     @Async
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(
+        propagation = Propagation.REQUIRES_NEW,
+        noRollbackFor = {Exception.class, org.springframework.dao.DataIntegrityViolationException.class}
+    )
     public void logUserActivity(String email, HttpServletRequest request) {
         try {
             Optional<UserEntity> userOpt = userRepository.findByEmail(email);
@@ -64,9 +68,11 @@ public class UserActivityLogService {
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             // Handle unique constraint violation gracefully (legacy constraint issue)
             log.debug("Activity log already exists for user {} (constraint violation) - skipping", email);
+            // Không ném lại exception vì đã config noRollbackFor
         } catch (Exception e) {
             // Không throw exception để tránh ảnh hưởng request chính
             log.error("Failed to log user activity for {}: {}", email, e.getMessage());
+            // Không ném lại exception vì đây là async và không nên fail
         }
     }
     private boolean shouldLogActivity(UserEntity user) {
