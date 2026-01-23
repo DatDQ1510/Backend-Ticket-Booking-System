@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -38,4 +39,18 @@ public interface UserRepository extends JpaRepository<UserEntity, Long>, JpaSpec
             @Param("startLastMonth") LocalDateTime startLastMonth,
             @Param("endLastMonth") LocalDateTime endLastMonth
     );
+
+    @Query(value = """
+        SELECT
+          COUNT(*) AS registrations_count
+        FROM users
+        WHERE created_at BETWEEN :startDate AND :endDate
+        GROUP BY DATE(created_at)
+        """, nativeQuery = true)
+    Map<String, Object> getUserRegisterationStatsDaily(LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * Find top 5 recently registered users
+     */
+    List<UserEntity> findTop5ByOrderByCreatedAtDesc();
 }

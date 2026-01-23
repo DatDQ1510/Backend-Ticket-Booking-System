@@ -275,7 +275,7 @@ public class EventServiceImpl implements EventService {
         LocalDateTime endLastMonth = today.minusMonths(1).atTime(23, 59, 59);
 
         return ApiResponse.success("Get full data event Dashboard",
-                eventRepository.getEventsStatsMTD(
+                eventRepository.getEventStatsMTD(
                         startThisMonth,
                         endThisMonth,
                         startLastMonth,

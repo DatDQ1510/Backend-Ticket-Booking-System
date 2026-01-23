@@ -18,7 +18,6 @@ public class EmailConsumer {
     private final MailService mailService;
     private final OrderRepository orderRepository;
 
-    @Transactional
     @RabbitListener(queues = RabbitMQConfig.EMAIL_QUEUE)
     public void handleEmailNotification(PaymentNotificationDTO notification) {
         System.out.println(">>> [EMAIL CONSUMER] Nhận được payment notification để gửi email:");
@@ -43,12 +42,11 @@ public class EmailConsumer {
 
             System.out.println("✅ Đã gửi email thành công cho order: " + notification.getOrderId());
 
-
         } catch (Exception e) {
             System.err.println("❌ Lỗi khi gửi email: " + e.getMessage());
             e.printStackTrace();
-            // Nếu có lỗi, message sẽ được retry hoặc gửi vào DLQ theo config
-            throw new RuntimeException("Failed to send email notification", e);
+            // ⚠️ Không throw exception để tránh retry vô hạn khi Gmail authentication failed
+            // Nếu muốn retry: throw new RuntimeException("Failed to send email notification", e);
         }
     }
 }

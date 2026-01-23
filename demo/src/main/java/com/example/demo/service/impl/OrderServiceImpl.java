@@ -1,6 +1,8 @@
 package com.example.demo.service.impl;
 
+import com.example.demo.config.RabbitMQConfig;
 import com.example.demo.context.UserContext;
+import com.example.demo.dto.PaymentNotificationDTO;
 import com.example.demo.dto.order.CreateOrderDTO;
 import com.example.demo.dto.order.OrderResponse;
 import com.example.demo.entity.OrderEntity;
@@ -16,6 +18,10 @@ import com.example.demo.repository.SeatRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.OrderService;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,20 +29,25 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final SeatRepository seatRepository;
     private final UserRepository userRepository;
     private final MomoService momoService;
+    private final RedissonClient redissonClient;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional
     public OrderResponse createOrder(CreateOrderDTO orderDTO) {
+
         Long userId = UserContext.getCurrentUserId();
         List<Long> seatIds = orderDTO.getSeatIds();
         String payType = orderDTO.getPayType();
@@ -46,14 +57,15 @@ public class OrderServiceImpl implements OrderService {
         if (seats.size() != seatIds.size()) {
             throw new RuntimeException("Some seats not found");
         }
-
-        // 2️⃣ Kiểm tra seat hợp lệ và cập nhật trạng thái
+        log.info("seats: " + seats);
+        // 2️⃣ Kiểm tra seat hợp lệ và cập nhật trạng thái sang HOLD (giữ chỗ 15 phút)
         Long totalAmount = 0L;
         for (SeatEntity seat : seats) {
+            log.info("Checking seat: {} - Status: {}", seat.getSeatNumber(), seat.getStatus());
             if (seat.getStatus() != SeatStatus.AVAILABLE) {
-                throw new RuntimeException("Seat " + seat.getSeatNumber() + " is not available");
+                throw new RuntimeException("Ghế " + seat.getSeatNumber() + " đang được giữ hoặc đã được đặt. Trạng thái: " + seat.getStatus());
             }
-            seat.setStatus(SeatStatus.BOOKED);
+            seat.setStatus(SeatStatus.HOLD);  // HOLD thay vì BOOKED
             totalAmount += seat.getPrice();
         }
 
@@ -96,11 +108,30 @@ public class OrderServiceImpl implements OrderService {
             );
             System.out.println("paymentResponse" + paymentResponse);
             payUrl = (String) paymentResponse.get("payUrl");
-            
+
             // Update order fields - Hibernate will auto-detect changes (dirty checking)
             order.setMomoTransId(payUrl);
             order.setStatus(OrderStatus.WAITING_PAYMENT);
             // No need to call save() again - transaction will auto-update
+            orderRepository.save(order);
+            
+//            // Send event to RabbitMQ for email notification when payment succeeds
+//            try {
+//                PaymentNotificationDTO notification = new PaymentNotificationDTO(
+//                    order.getOrderId(),
+//                    0, // resultCode = 0 (success) - sẽ được update lại khi MoMo callback
+//                    null, // transId - chưa có, đợi callback
+//                    totalAmount,
+//                    "Thanh toán vé sự kiện #" + order.getOrderId(),
+//                    payType,
+//                    null, null, null
+//                );
+//                rabbitTemplate.convertAndSend(RabbitMQConfig.EMAIL_QUEUE, notification);
+//                log.info("📨 Sent payment notification to RabbitMQ for order: {}", order.getOrderId());
+//            } catch (Exception rabbitEx) {
+//                log.error("❌ Failed to send message to RabbitMQ for order: {}", order.getOrderId(), rabbitEx);
+//                // Don't throw - continue with order creation even if RabbitMQ fails
+//            }
             
             System.out.println("✅ Created payment for order " + order.getOrderId() + " → " + payUrl);
         } catch (Exception e) {
@@ -111,6 +142,36 @@ public class OrderServiceImpl implements OrderService {
 
         // 9️⃣ Convert Entity to DTO and include payUrl for frontend redirect
         return mapToOrderResponse(order, payUrl);
+    }
+
+
+    @Override
+    public OrderResponse tryKeyLock(CreateOrderDTO orderDTO) {
+        // 1. Tạo key lock dựa trên danh sách ID ghế đã sắp xếp (để tránh deadlock)
+        List<Long> sortedIds = orderDTO.getSeatIds().stream().sorted().toList();
+        String lockKey = "lock:seats:" + sortedIds;
+        RLock lock = redissonClient.getLock(lockKey);
+
+        try {
+            // 2. Thử chiếm lock trong 5 giây, giữ tối đa 10 giây
+            if (lock.tryLock(5, 10, TimeUnit.SECONDS)) {
+                // 3. Gọi method có @Transactional ở Service khác
+                log.info("Acquired lock for key: " + lockKey);
+                return this.createOrder(orderDTO);
+            } else {
+                throw new RuntimeException("Ghế đang được người khác giữ, vui lòng thử lại sau.");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Lỗi hệ thống khi xử lý khóa.");
+        } finally {
+            // 4. Luôn nhả lock sau khi Transaction đã hoàn tất (COMMIT)
+            // Kiểm tra xem lock có đang được giữ bởi thread hiện tại không trước khi unlock
+            if (lock.isHeldByCurrentThread()) {
+                log.info("Unlock {}: ", lockKey);
+                lock.unlock();
+            }
+        }
     }
     
     private OrderResponse mapToOrderResponse(OrderEntity order, String payUrl) {
@@ -162,9 +223,12 @@ public class OrderServiceImpl implements OrderService {
         order.setMomoTransId(transId);
         order.setPaidAt(java.time.LocalDateTime.now());
         System.out.println("order" + order);
-        // Cập nhật tickets sang SOLD
+        
+        // Cập nhật tickets sang SOLD và seats từ HOLD sang BOOKED
         for (TicketEntity ticket : order.getTickets()) {
             ticket.setStatus(TicketStatus.SOLD);
+            SeatEntity seat = ticket.getSeat();
+            seat.setStatus(SeatStatus.BOOKED);  // HOLD → BOOKED
         }
         
         orderRepository.save(order);
@@ -214,7 +278,7 @@ public class OrderServiceImpl implements OrderService {
         LocalDateTime startLastMonth = today.minusMonths(1).withDayOfMonth(1).atStartOfDay();
         LocalDateTime endLastMonth = today.minusMonths(1).atTime(23, 59, 59);
 
-        return ApiResponse.success("Get full data revenue Dashboard", orderRepository.getRevenueStatsMTD(
+        return ApiResponse.success("Get full data revenue Dashboard", orderRepository.getOrderStatsMTD(
                 startThisMonth,
                 endThisMonth,
                 startLastMonth,

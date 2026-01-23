@@ -21,7 +21,12 @@ public class UploadController {
     @PostMapping
     public ApiResponse<UploadResponse> upload(@RequestParam MultipartFile file) throws IOException {
         Optional<UploadResponse> dataUpload = cloudinaryService.uploadFile(file);
-        return ApiResponse.success("Upload successful", dataUpload.orElse(null));
+        
+        if (dataUpload.isEmpty()) {
+            throw new RuntimeException("Upload failed: No data returned from Cloudinary");
+        }
+        
+        return ApiResponse.success("Upload successful", dataUpload.get());
     }
     @DeleteMapping
     public ApiResponse<String> delete(@RequestParam("publicId") String publicId)throws IOException {

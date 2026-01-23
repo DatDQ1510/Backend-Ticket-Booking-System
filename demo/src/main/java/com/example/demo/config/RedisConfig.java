@@ -2,6 +2,9 @@ package com.example.demo.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -59,6 +62,15 @@ public class RedisConfig {
         script.setLocation(new ClassPathResource("redis/seat_hold_release.lua"));
         script.setResultType(Long.class);
         return script;
+    }
+    @Bean(destroyMethod = "shutdown")
+    public RedissonClient redisson() {
+        Config config = new Config();
+        // Thay đổi địa chỉ nếu cần (mặc định là localhost:6379)
+        config.useSingleServer()
+                .setAddress("redis://127.0.0.1:6379");
+
+        return Redisson.create(config);
     }
 
 }

@@ -33,14 +33,22 @@ public class CloudinaryService {
 
             log.info("Upload result: {}", uploadResult);
 
+            // Validate upload result
+            if (uploadResult == null || uploadResult.get("secure_url") == null || uploadResult.get("public_id") == null) {
+                log.error("Invalid upload result from Cloudinary: {}", uploadResult);
+                return Optional.empty();
+            }
+
             UploadResponse response = new UploadResponse();
             response.setUrl(uploadResult.get("secure_url").toString());
             response.setPublicId(uploadResult.get("public_id").toString());
 
+            log.info("✅ File uploaded successfully: url={}, publicId={}", response.getUrl(), response.getPublicId());
+
             return Optional.of(response);
 
         } catch (Exception e) {
-            log.error("Error uploading file to Cloudinary: {}", e.getMessage(), e);
+            log.error("❌ Error uploading file to Cloudinary: {}", e.getMessage(), e);
             return Optional.empty();
         }
     }

@@ -41,19 +41,20 @@ public class MomoService {
         body.put("accessKey", accessKey);
         body.put("requestId", requestId);
         body.put("amount", String.valueOf(amount));
-        body.put("orderId", orderId); // Use original orderId, not momoOrderId
+        body.put("orderId", momoOrderId); // Use momoOrderId with timestamp to avoid duplicate
         body.put("orderInfo", orderInfo);
         body.put("redirectUrl", returnUrl); // đúng tên field theo tài liệu MoMo
         body.put("ipnUrl", notifyUrl);      // đúng tên field theo tài liệu MoMo
         body.put("extraData", extraData);
         body.put("requestType", "captureWallet");
+        body.put("expireTime", 15); // Thời gian hết hạn thanh toán: 15 phút
 
         // ✅ raw hash đúng thứ tự key theo tài liệu MoMo
         String rawHash = "accessKey=" + accessKey +
                 "&amount=" + amount +
                 "&extraData=" + extraData +
                 "&ipnUrl=" + notifyUrl +
-                "&orderId=" + orderId + // Use original orderId
+                "&orderId=" + momoOrderId + // Use momoOrderId with timestamp
                 "&orderInfo=" + orderInfo +
                 "&partnerCode=" + partnerCode +
                 "&redirectUrl=" + returnUrl +

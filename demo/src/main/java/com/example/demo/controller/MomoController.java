@@ -76,9 +76,14 @@
                 Object requestId = body.get("requestId");
                 Object signature = body.get("signature");
                 Object extraData = body.get("extraData");
-                        // Tạo DTO để gửi vào RabbitMQ
+                
+                // Extract orderId gốc từ momoOrderId (format: "61_1768409815618" -> "61")
+                String momoOrderId = orderId.toString();
+                Long originalOrderId = Long.parseLong(momoOrderId.split("_")[0]);
+                
+                // Tạo DTO để gửi vào RabbitMQ
                 PaymentNotificationDTO notification = new PaymentNotificationDTO();
-                notification.setOrderId(Long.parseLong(orderId.toString()));
+                notification.setOrderId(originalOrderId); // Dùng orderId gốc đã extract
                 notification.setResultCode(Integer.parseInt(resultCode.toString()));
                 notification.setTransId(transId != null ? transId.toString() : null);
                 notification.setAmount(amount != null ? Long.parseLong(amount.toString()) : null);
@@ -95,7 +100,7 @@
                         notification
                 );
 
-                System.out.println("✅ Đã gửi payment notification vào RabbitMQ queue cho orderId: " + orderId);
+                System.out.println("✅ Đã gửi payment notification vào RabbitMQ queue cho orderId: " + originalOrderId);
 
             // Trả về OK ngay lập tức cho MoMo
             return ResponseEntity.ok("OK");

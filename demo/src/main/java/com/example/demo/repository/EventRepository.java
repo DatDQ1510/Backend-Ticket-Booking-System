@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,8 +19,8 @@ import java.util.Optional;
 public interface EventRepository extends JpaRepository<EventEntity, Long>, JpaSpecificationExecutor<EventEntity> {
     Optional<List<EventEntity>> findByEventType (String eventType);
     Optional<List<EventEntity>> findByLocation (String location);
-    List<EventEntity> findByDate(Date date);
-    List<EventEntity> findByDateBetween(Date start, Date end);
+    List<EventEntity> findByDate(LocalDate date);
+    List<EventEntity> findByDateBetween(LocalDate start, LocalDate end);
 
     @Query("""
 
@@ -50,12 +49,22 @@ public interface EventRepository extends JpaRepository<EventEntity, Long>, JpaSp
           
 
         """, nativeQuery = true)
-    Map<String, Object> getEventsStatsMTD(
+    Map<String, Object> getEventStatsMTD(
             @Param("startThisMonth") LocalDateTime startThisMonth,
             @Param("endThisMonth") LocalDateTime endThisMonth,
             @Param("startLastMonth") LocalDateTime startLastMonth,
             @Param("endLastMonth") LocalDateTime endLastMonth
     );
+
+    /**
+     * Count active events (events in the future)
+     */
+    Long countByDateAfter(LocalDate date);
+
+    /**
+     * Find top 5 recently created events
+     */
+    List<EventEntity> findTop5ByOrderByCreatedAtDesc();
 
 
     @Query(value = """

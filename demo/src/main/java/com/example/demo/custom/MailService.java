@@ -5,12 +5,13 @@ package com.example.demo.custom;
 import com.example.demo.entity.OrderEntity;
 import com.example.demo.entity.TicketEntity;
 import com.example.demo.repository.OrderRepository;
+import com.example.demo.service.QRCodeService;
 import com.example.demo.service.TicketService;
-import com.example.demo.util.QRCodeUtil;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
 import java.io.ByteArrayInputStream;
+import java.util.Base64;
 
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -28,6 +29,7 @@ public class MailService {
     private final JavaMailSender mailSender;
     private final OrderRepository orderRepository;
     private final TicketService ticketService;
+    private final QRCodeService qrCodeService;
 
     public void sendOtp(String email, String otp) {
         SimpleMailMessage message = new SimpleMailMessage();
@@ -81,15 +83,9 @@ public class MailService {
             for (int i = 0; i < tickets.size(); i++) {
                 TicketEntity ticket = tickets.get(i);
                 
-                // Create QR code data with ticket information
-                String qrData = String.format("TICKET_ID:%d|ORDER_ID:%d|EVENT_ID:%d|SEAT_ID:%d",
-                        ticket.getTicketId(),
-                        orderId,
-                        ticket.getEvent().getEventId(),
-                        ticket.getSeat().getSeatId());
-
-                // Generate QR code image
-                byte[] qrCodeImage = QRCodeUtil.generateQRCodeImage(qrData, 300, 300);
+                // Generate QR code using QRCodeService (includes USER_ID and TIMESTAMP for security)
+                String qrCodeBase64 = qrCodeService.generateTicketQRCode(ticket.getTicketId());
+                byte[] qrCodeImage = Base64.getDecoder().decode(qrCodeBase64);
 
                 // Attach QR code to email
                 String attachmentName = "ticket_" + (i + 1) + "_qr_code.png";

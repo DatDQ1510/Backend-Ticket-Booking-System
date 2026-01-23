@@ -22,7 +22,7 @@ public class OrderController {
 
     @PostMapping("/create")
     public ApiResponse<OrderResponse> createOrder(@RequestBody CreateOrderDTO orderDTO) {
-        OrderResponse createdOrder = orderService.createOrder(orderDTO);
+        OrderResponse createdOrder = orderService.tryKeyLock(orderDTO);
         return ApiResponse.success("Order created successfully", createdOrder);
     }
 

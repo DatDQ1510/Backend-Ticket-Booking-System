@@ -63,14 +63,14 @@ public class EventController {
 
     /**
      * ✅ Get all events with pagination and sorting
-     * GET /api/events?page=0&size=10&sortBy=date&direction=desc
+     * GET /api/events?page=0&size=10&sortBy=createdAt&direction=desc
      * Supports geolocation filtering: longitude, latitude, distanceKm
      */
     @GetMapping("/")
     public ResponseEntity<PagedResponse<EventResponse>> getEvents(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction,
             @RequestParam(required = false) String longitude,
             @RequestParam(required = false) String latitude,
@@ -133,7 +133,7 @@ public class EventController {
             @RequestParam(required = false) String eventStatus,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction
     ) {
         EventSearchCriteria criteria = EventSearchCriteria.builder()

@@ -15,5 +15,6 @@ public interface OrderService {
     List<OrderResponse> getOrdersByUserId(Long userId);
 
     ApiResponse<?> getRevenueDashboardData();
+    OrderResponse tryKeyLock(CreateOrderDTO orderDTO);
 
 }

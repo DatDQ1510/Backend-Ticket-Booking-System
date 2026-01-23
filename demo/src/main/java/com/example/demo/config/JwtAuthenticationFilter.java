@@ -6,6 +6,7 @@ import com.example.demo.exception.TokenException;
 import com.example.demo.security.JwtTokenProvider;
 import com.example.demo.custom.CustomUserDetailsService;
 import com.example.demo.auth.TokenBlacklistService;
+import com.example.demo.service.UserActivityLogService;
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -37,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService userDetailsService;
     private final TokenBlacklistService blacklistService;
+    private final UserActivityLogService activityLogService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -79,6 +81,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     
                     if (!isBlacklisted) {
                         setAuthentication(metadata.getEmail(), request); // có khả năng gây ra vấn đề hiệu năng vì lần nào cũng phải gọi vào DB check
+                        
+                        // 📝 Log user activity (async)
+                        activityLogService.logUserActivity(metadata.getEmail(), request);
+                        
                         log.info("✅ Authenticated successfully for {} on {}", metadata.getEmail(), path);
                     } else {
                         log.warn("❌ Token is blacklisted - TokenId: {}, Email: {}", 
@@ -148,6 +154,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // ✅ Thiết lập lại Authentication để cho phép request đi qua
                     setAuthentication(metadata.getEmail(), request);
+                    
+                    // 📝 Log user activity (async)
+                    activityLogService.logUserActivity(metadata.getEmail(), request);
 
                     log.info("✅ Auto-refreshed token for {}", metadata.getEmail());
                     return true;

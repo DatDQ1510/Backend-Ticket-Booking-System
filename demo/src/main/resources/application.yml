@@ -2,10 +2,10 @@ spring:
   application:
     name: ticket-booking
   mail:
-    host: ${SPRING_EMAIL_HOST}
-    port: ${SPRING_EMAIL_PORT}
-    username: ${SPRING_EMAIL_USERNAME}
-    password: ${SPRING_EMAIL_PASSWORD}
+    host: ${SPRING_EMAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_EMAIL_PORT:587}
+    username: ${SPRING_EMAIL_USERNAME:}
+    password: ${SPRING_EMAIL_PASSWORD:}
 
     properties:
         mail:
@@ -16,9 +16,9 @@ spring:
   spring:
 
     rabbitmq:
-      host: ${SPRING_RABBITMQ_HOST}
-      port: ${SPRING_RABBITMQ_PORT}
-      username: ${SPRING_RABBITMQ_USERNAME}
+      host: ${SPRING_RABBITMQ_HOST:587}
+      port: ${SPRING_RABBITMQ_PORT:smtp.gmail.com}
+      username: ${SPRING_RABBITMQ_USERNAME:dinhdat15102003@gmail.com}
       password: ${SPRING_RABBITMQ_PASSWORD}
 
 

@@ -29,6 +29,8 @@ public interface EventMapper {
     @BeanMapping(ignoreByDefault = false) // vẫn map các field không null
     void updateEventFromDto(EventUpdateDTO dto, @MappingTarget EventEntity entity);
 
+    @Mapping(target = "createdAt", source = "createdAt")
+    @Mapping(target = "updatedAt", source = "updatedAt")
     EventResponse toResponse(EventEntity entity);
 
     List<EventResponse> toResponseList(List<EventEntity> entities);
