@@ -11,7 +11,11 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
+
 @Configuration
+@Slf4j
 public class RabbitMQConfig {
     // ====== EXCHANGE ======
     public static final String PAYMENT_EXCHANGE = "payment.exchange";
@@ -26,6 +30,16 @@ public class RabbitMQConfig {
 
     // ====== ROUTING ======
     public static final String PAYMENT_ROUTING_KEY = "payment.success";
+
+    @PostConstruct
+    public void init() {
+        log.info("🐰 ============================================");
+        log.info("🐰 RabbitMQConfig initialized!");
+        log.info("🐰 Payment Exchange: {}", PAYMENT_EXCHANGE);
+        log.info("🐰 Payment Queue: {}", PAYMENT_QUEUE);
+        log.info("🐰 Email Queue: {}", EMAIL_QUEUE);
+        log.info("🐰 ============================================");
+    }
 
     // ---------- EXCHANGE ----------
     @Bean
@@ -78,6 +92,21 @@ public class RabbitMQConfig {
                 .to(paymentExchange());
     }
 
+    // DLQ Bindings - cần binding từ DLX đến các DLQ
+    @Bean
+    Binding paymentDLQBinding() {
+        return BindingBuilder.bind(paymentDLQ())
+                .to(paymentDLX())
+                .with(PAYMENT_DLQ);
+    }
+
+    @Bean
+    Binding emailDLQBinding() {
+        return BindingBuilder.bind(emailDLQ())
+                .to(paymentDLX())
+                .with(EMAIL_DLQ);
+    }
+
 
     // ---------- MESSAGE CONVERTER ----------
     @Bean
@@ -123,7 +152,9 @@ public class RabbitMQConfig {
 
     @Bean
     public RabbitAdmin rabbitAdmin(ConnectionFactory cf) {
-        return new RabbitAdmin(cf);
+        RabbitAdmin admin = new RabbitAdmin(cf);
+        admin.setAutoStartup(true); // Đảm bảo RabbitAdmin tự động khởi động và declare queues
+        return admin;
     }
 
 }
